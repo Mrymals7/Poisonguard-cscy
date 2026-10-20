@@ -42,3 +42,19 @@ def clean(df):
         df = df.drop_duplicates()
 
         return df
+
+def sample(df, n=200_000, seed=42, min_count=3000):
+    """Take about n rows: keep all rows of rare attack types, sample the rest evenly."""
+    counts = df["attack_type"].value_counts()
+    rare_types = counts[counts < min_count].index
+
+    rare = df[df["attack_type"].isin(rare_types)]
+    common = df[~df["attack_type"].isin(rare_types)]
+
+    frac = (n - len(rare)) / len(common)
+    common_sample = common.groupby("attack_type").sample(frac=frac, random_state=seed)
+
+    result = pd.concat([common_sample, rare])
+    result = result.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    return result
