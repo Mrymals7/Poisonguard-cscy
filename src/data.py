@@ -2,6 +2,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 def load_raw(folder):
     """Read all day CSV files in `folder` and combine them into one DataFrame."""
@@ -69,3 +70,18 @@ def split(df, seed=42):
         rest, test_size=0.50, stratify=rest["attack_type"], random_state=seed
     )
     return train, val, test
+
+def scale(train, val, test):
+    """Scale features to 0-1 using the training set only, and clip val/test to that range."""
+    features = [c for c in train.columns if c not in ("label", "attack_type")]
+
+    scaler = MinMaxScaler()
+    scaler.fit(train[features])
+
+    scaled = []
+    for part in (train, val, test):
+        part = part.copy()
+        part[features] = scaler.transform(part[features]).clip(0, 1)
+        scaled.append(part)
+
+    return scaled[0], scaled[1], scaled[2], scaler
