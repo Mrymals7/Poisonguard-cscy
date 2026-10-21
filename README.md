@@ -27,11 +27,46 @@ Machine-learning intrusion detectors can be attacked during training (data poiso
 - `notebooks/` : exploratory notebooks
 
 ## Setup
-```
+
+### 1. Install the requirements
+```bash
 pip install -r requirements.txt
+```
+
+### 2. Get the data
+The dataset is **not** stored in this repository (it is large, and the repository is public).
+We use the corrected CICIDS2017 dataset from Lanvin et al. (CRiSIS 2022), configuration
+**Exp_RP**: packets re-ordered, duplicate packets removed and port-scan labels corrected.
+
+Run this once from the folder that contains this repository (in Codespaces: `/workspaces`):
+```bash
+git clone https://gitlab.inria.fr/mlanvin/crisis2022.git
+mkdir -p Poisonguard-cscy/data/raw/lanvin_exp_rp
+cp crisis2022/Labels/Exp_RP/*.csv Poisonguard-cscy/data/raw/lanvin_exp_rp/
+rm -rf crisis2022
+```
+
+### 3. Prepare the data (one command)
+From the repository folder:
+```bash
+python -m src.data
+```
+This cleans the data, takes a stratified 200,000-row sample, splits it 70/15/15
+(train / validation / test, seed 42), scales the features to 0–1 using the training
+set only, and saves the result to `data/processed/`.
+
+### 4. Train the baselines
+```bash
+python -m src.models.random_forest
+python -m src.models.mlp
+```
+Each trains on the training set and prints precision, recall, F1 score and
+false-positive rate on the validation set.
+
+### 5. Run the tests
+```bash
 pytest
 ```
-Full run instructions will be added as the implementation is completed (Deliverable 2).
 
 ## Project status
 Deliverable 1 (introduction, literature review, methodology and team plan): completed.
