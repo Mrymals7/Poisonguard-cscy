@@ -70,7 +70,7 @@ pytest
 
 ## Project status
 Deliverable 1 (introduction, literature review, methodology and team plan): completed.
-Deliverable 2 (implementation, evaluation and presentation): in planning, see the Issues board.
+Deliverable 2 (implementation, evaluation and presentation): in progress. Data pipeline, baseline models and evaluation are complete; attacks and defences are under development.
 
 ## Ethics
 All attacks target only models we train ourselves on public benchmark datasets in an isolated lab environment. No live or third-party systems are tested. Identifiers such as IP addresses are removed, and all datasets and tools are cited.
