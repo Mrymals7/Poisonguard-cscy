@@ -227,3 +227,5 @@ data/raw/
 data/raw/
 data/processed/
 *.zip
+# Allow experiment results (small CSV files) to be committed
+!results/*.csv
