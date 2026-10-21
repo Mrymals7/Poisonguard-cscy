@@ -96,6 +96,14 @@ def save(train, val, test, scaler, out_dir="data/processed"):
     test.to_csv(out / "test.csv", index=False)
     joblib.dump(scaler, out / "scaler.joblib")
 
+def load_processed(name, folder="data/processed"):
+    """Load 'train', 'val' or 'test' and return features X, labels y and attack types."""
+    df = pd.read_csv(Path(folder) / f"{name}.csv")
+    y = df["label"]
+    attack_type = df["attack_type"]
+    X = df.drop(columns=["label", "attack_type"])
+    return X, y, attack_type
+
 def prepare_data(raw_dir="data/raw/lanvin_exp_rp", out_dir="data/processed", n=200_000, seed=42):
     """Run the full pipeline: load, clean, sample, split, scale and save."""
     df = load_raw(raw_dir)
