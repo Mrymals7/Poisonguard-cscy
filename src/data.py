@@ -1,6 +1,7 @@
 from pathlib import Path
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 def load_raw(folder):
     """Read all day CSV files in `folder` and combine them into one DataFrame."""
@@ -58,3 +59,13 @@ def sample(df, n=200_000, seed=42, min_count=3000):
     result = result.sample(frac=1, random_state=seed).reset_index(drop=True)
 
     return result
+
+def split(df, seed=42):
+    """Split into 70% train, 15% validation, 15% test, keeping the same attack mix in each."""
+    train, rest = train_test_split(
+        df, test_size=0.30, stratify=df["attack_type"], random_state=seed
+    )
+    val, test = train_test_split(
+        rest, test_size=0.50, stratify=rest["attack_type"], random_state=seed
+    )
+    return train, val, test
