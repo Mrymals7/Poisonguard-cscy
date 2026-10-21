@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
+import joblib
 
 def load_raw(folder):
     """Read all day CSV files in `folder` and combine them into one DataFrame."""
@@ -85,3 +86,26 @@ def scale(train, val, test):
         scaled.append(part)
 
     return scaled[0], scaled[1], scaled[2], scaler
+def save(train, val, test, scaler, out_dir="data/processed"):
+    """Save the three sets and the scaler so every teammate uses identical data."""
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    train.to_csv(out / "train.csv", index=False)
+    val.to_csv(out / "val.csv", index=False)
+    test.to_csv(out / "test.csv", index=False)
+    joblib.dump(scaler, out / "scaler.joblib")
+
+def prepare_data(raw_dir="data/raw/lanvin_exp_rp", out_dir="data/processed", n=200_000, seed=42):
+    """Run the full pipeline: load, clean, sample, split, scale and save."""
+    df = load_raw(raw_dir)
+    df = clean(df)
+    df = sample(df, n=n, seed=seed)
+    train, val, test = split(df, seed=seed)
+    train, val, test, scaler = scale(train, val, test)
+    save(train, val, test, scaler, out_dir)
+    print(f"Saved train {train.shape}, val {val.shape}, test {test.shape} to {out_dir}")
+
+
+if __name__ == "__main__":
+    prepare_data()
