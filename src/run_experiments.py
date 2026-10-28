@@ -6,7 +6,7 @@ import pandas as pd
 from src.data import load_processed
 from src.models.random_forest import train_random_forest
 from src.models.mlp import train_mlp, predict_mlp
-from src.evaluation.metrics import evaluate, attack_success_rate
+from src.evaluation.metrics import evaluate, attack_success_rate, per_class_detection
 
 # Each model: (training function, prediction function)
 MODELS = {
@@ -18,7 +18,7 @@ RESULTS_FILE = Path("results/results.csv")
 
 
 def run_one(model_name, seed, X_train, y_train, X_test, y_test,
-            attack="none", rate=0.0, defence="none"):
+            attack="none", rate=0.0, defence="none", attack_type_test=None):
     """Train one model on the given training data, score it on the test set, return one result row."""
     train_fn, predict_fn = MODELS[model_name]
 
@@ -31,18 +31,22 @@ def run_one(model_name, seed, X_train, y_train, X_test, y_test,
     row.update(evaluate(y_test, pred))
     row["asr_clean_attacks"] = attack_success_rate(pred[y_test.values == 1])
     row["train_time_s"] = round(train_time, 1)
+    if attack_type_test is not None:
+        for name, value in per_class_detection(pred, attack_type_test).items():
+            row[f"detect_{name}"] = round(value, 4)
     return row
 
 
 def main():
     X_train, y_train, _ = load_processed("train")
-    X_test, y_test, _ = load_processed("test")
+    X_test, y_test, at_test = load_processed("test")
 
     rows = []
     for model_name in MODELS:
         for seed in SEEDS:
             print(f"Running {model_name}, seed {seed}...")
-            rows.append(run_one(model_name, seed, X_train, y_train, X_test, y_test))
+            rows.append(run_one(model_name, seed, X_train, y_train, X_test, y_test,
+                                attack_type_test=at_test))
 
     results = pd.DataFrame(rows)
     RESULTS_FILE.parent.mkdir(parents=True, exist_ok=True)
