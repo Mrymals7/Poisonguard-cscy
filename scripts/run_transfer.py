@@ -19,7 +19,18 @@ y_attack = y_val.loc[X_attack.index]
 mlp_before = predict_mlp(mlp, X_attack)
 rf_before = rf.predict(X_attack)
 
-X_adv = fgsm_attack(mlp, X_attack, y_attack, epsilon=0.01)
+allowed_features = [
+    col for col in X_train.columns
+    if col.startswith("Fwd")
+]
+
+X_adv = fgsm_attack(
+    mlp,
+    X_attack,
+    y_attack,
+    epsilon=0.01,
+    allowed_features=allowed_features
+)
 X_adv = pd.DataFrame(
     X_adv,
     columns=X_attack.columns,
