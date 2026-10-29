@@ -35,11 +35,17 @@ The project implements:
 - HopSkipJump against Random Forest.
 - Transfer attacks from MLP to Random Forest.
 
-FGSM and PGD support an allowed_features parameter that restricts which input columns can be modified.
 
-Automated tests verify that non-allowed features remain unchanged in synthetic test cases.
+FGSM, PGD, and HopSkipJump support the `allowed_features` parameter to restrict which input columns can be modified.
 
-HopSkipJump does not currently enforce these feature-level constraints.
+In the current experiments, the allowed features are selected using column names that start with `Fwd`. These forward-direction features are used as a preliminary approximation of properties that an attacker may influence through outgoing packets.
+
+All other features are treated as fixed. HopSkipJump uses a feature mask and restores restricted feature values after generating adversarial examples.
+
+Automated tests verify that FGSM, PGD, and HopSkipJump preserve non-allowed features in synthetic test cases.
+
+However, allowing changes to `Fwd` features does not guarantee realistic network traffic. Some forward-direction statistics are mathematically dependent on other features, and these relationships are not fully enforced.
+
 
 ## 5. Experimental Limitations
 

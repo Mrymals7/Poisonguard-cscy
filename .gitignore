@@ -229,3 +229,6 @@ data/processed/
 *.zip
 # Allow experiment results (small CSV files) to be committed
 !results/*.csv
+
+# Locally cached adversarial examples - do not commit
+results/cache/
