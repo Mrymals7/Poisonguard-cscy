@@ -1,3 +1,4 @@
+import pandas as pd
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 
 
@@ -15,3 +16,8 @@ def evaluate(y_true, y_pred):
 def attack_success_rate(y_pred):
     """Share of attack flows the model classified as benign (0)."""
     return float((y_pred == 0).mean())
+
+def per_class_detection(y_pred, attack_type):
+    """Share of flows flagged as attack (1) for each attack type."""
+    table = pd.DataFrame({"attack_type": attack_type.values, "flagged": y_pred == 1})
+    return table.groupby("attack_type")["flagged"].mean()
