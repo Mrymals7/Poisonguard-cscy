@@ -46,3 +46,40 @@ def test_same_seed_gives_same_predictions():
     predictions_b = predict_partition_ensemble(models_b, X)
 
     np.testing.assert_array_equal(predictions_a, predictions_b)
+
+
+def test_mlp_ensemble_model_count_and_predictions():
+    X = pd.DataFrame({"feature": np.linspace(0, 1, 60)})
+    y = pd.Series([0, 1] * 30)
+
+    models = train_partition_ensemble(
+        X, y, n_partitions=3, seed=42, model_type="mlp"
+    )
+    predictions = predict_partition_ensemble(
+        models, X, model_type="mlp"
+    )
+
+    assert len(models) == 3
+    assert predictions.shape == (len(X),)
+    assert np.isin(predictions, [0, 1]).all()
+
+
+def test_mlp_same_seed_gives_same_predictions():
+    X = pd.DataFrame({"feature": np.linspace(0, 1, 60)})
+    y = pd.Series([0, 1] * 30)
+
+    models_a = train_partition_ensemble(
+        X, y, n_partitions=3, seed=42, model_type="mlp"
+    )
+    models_b = train_partition_ensemble(
+        X, y, n_partitions=3, seed=42, model_type="mlp"
+    )
+
+    predictions_a = predict_partition_ensemble(
+        models_a, X, model_type="mlp"
+    )
+    predictions_b = predict_partition_ensemble(
+        models_b, X, model_type="mlp"
+    )
+
+    np.testing.assert_array_equal(predictions_a, predictions_b)
