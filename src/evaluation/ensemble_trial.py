@@ -1,9 +1,10 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
+from src.evaluation.metrics import evaluate
 from src.data import load_processed
 from src.defences.partition_ensemble import train_partition_ensemble, predict_partition_ensemble
 from src.models.random_forest import train_random_forest
+from src.models.mlp import train_mlp, predict_mlp
 from src.attacks.label_flipping import random_label_flipping
 if __name__ == "__main__":
     X_train, y_train, _ = load_processed("train")
@@ -19,17 +20,28 @@ if __name__ == "__main__":
     model = train_random_forest(X_small, poisoned_labels, seed=42)
     pred = model.predict(X_val)
     print("Single Random Forest")
-    print(f"Precision: {precision_score(y_val, pred, zero_division=0):.4f}")
-    print(f"Recall: {recall_score(y_val, pred, zero_division=0):.4f}")
-    print(f"F1: {f1_score(y_val, pred, zero_division=0):.4f}")
-    tn, fp, fn, tp = confusion_matrix(y_val, pred, labels=[0, 1]).ravel()
-    print(f"False-positive rate: {fp / (fp + tn):.4f}")
+    scores = evaluate(y_val, pred)
+    for name, value in scores.items():
+        print(f"{name}: {value:.4f}")
     models = train_partition_ensemble(X_small, poisoned_labels)
     pred = predict_partition_ensemble(models, X_val)
     print("Partition Ensemble")
-    print(f"Precision: {precision_score(y_val, pred, zero_division=0):.4f}")
-    print(f"Recall: {recall_score(y_val, pred, zero_division=0):.4f}")
-    print(f"F1: {f1_score(y_val, pred, zero_division=0):.4f}")
-    tn, fp, fn, tp = confusion_matrix(y_val, pred, labels=[0, 1]).ravel()
-    print(f"False-positive rate: {fp / (fp + tn):.4f}")
+    scores = evaluate(y_val, pred)
+    for name, value in scores.items():
+        print(f"{name}: {value:.4f}")
+    model = train_mlp(X_small, poisoned_labels, seed=42)
+    pred = predict_mlp(model, X_val)
+    
 
+
+
+    print("Single MLP")
+    scores = evaluate(y_val, pred)
+    for name, value in scores.items():
+        print(f"{name}: {value:.4f}")
+    models = train_partition_ensemble(X_small, poisoned_labels, model_type="mlp")
+    pred = predict_partition_ensemble(models, X_val, model_type="mlp")
+    print("MLP Partition Ensemble")
+    scores = evaluate(y_val, pred)
+    for name, value in scores.items():
+        print(f"{name}: {value:.4f}")
