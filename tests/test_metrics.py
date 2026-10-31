@@ -1,5 +1,6 @@
 import numpy as np
-from src.evaluation.metrics import evaluate, attack_success_rate
+import pandas as pd
+from src.evaluation.metrics import evaluate, attack_success_rate, per_class_detection
 
 
 def test_evaluate_perfect_predictions():
@@ -22,3 +23,11 @@ def test_evaluate_one_false_alarm():
 def test_attack_success_rate():
     y_pred_on_attacks = np.array([0, 1, 0, 1])
     assert attack_success_rate(y_pred_on_attacks) == 0.5
+
+def test_per_class_detection():
+    y_pred = np.array([1, 1, 0, 0, 1])
+    attack_type = pd.Series(["DDoS", "DDoS", "PortScan", "BENIGN", "BENIGN"])
+    result = per_class_detection(y_pred, attack_type)
+    assert result["DDoS"] == 1.0
+    assert result["PortScan"] == 0.0
+    assert result["BENIGN"] == 0.5
