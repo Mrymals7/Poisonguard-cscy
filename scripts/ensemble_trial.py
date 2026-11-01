@@ -45,3 +45,50 @@ if __name__ == "__main__":
     scores = evaluate(y_val, pred)
     for name, value in scores.items():
         print(f"{name}: {value:.4f}")
+
+    for training_name, labels in [
+        ("Clean", y_small),
+        ("Poisoned", poisoned_labels),
+    ]:
+        for n_partitions in [11, 25, 51]:
+            print(
+                f"\n{training_name} RF: {n_partitions} partitions",
+                flush=True,
+            )
+            models = train_partition_ensemble(
+                X_small,
+                labels,
+                n_partitions=n_partitions,
+                seed=42,
+                model_type="rf",
+            )
+            pred = predict_partition_ensemble(
+                models, X_val, model_type="rf"
+            )
+            scores = evaluate(y_val, pred)
+            for name, value in scores.items():
+                print(f"{name}: {value:.4f}")
+
+    for training_name, labels in [
+        ("Clean", y_small),
+        ("Poisoned", poisoned_labels),
+    ]:
+        for n_partitions in [3, 11, 25, 51]:
+            print(
+                f"\n{training_name} MLP: {n_partitions} partitions, 100 epochs",
+                flush=True,
+            )
+            models = train_partition_ensemble(
+                X_small,
+                labels,
+                n_partitions=n_partitions,
+                seed=42,
+                model_type="mlp",
+                epochs=100,
+            )
+            pred = predict_partition_ensemble(
+                models, X_val, model_type="mlp"
+            )
+            scores = evaluate(y_val, pred)
+            for name, value in scores.items():
+                print(f"{name}: {value:.4f}")

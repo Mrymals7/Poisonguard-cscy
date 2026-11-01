@@ -1,7 +1,7 @@
 import numpy as np
 from src.models.random_forest import train_random_forest
 from src.models.mlp import train_mlp, predict_mlp
-def train_partition_ensemble(X_train, y_train, n_partitions=3, seed=42, model_type="rf"):
+def train_partition_ensemble(X_train, y_train, n_partitions=3, seed=42, model_type="rf", epochs=10):
     rng = np.random.default_rng(seed)
     indices = rng.permutation(len(X_train))
     partitions = np.array_split(indices, n_partitions)
@@ -13,7 +13,7 @@ def train_partition_ensemble(X_train, y_train, n_partitions=3, seed=42, model_ty
         if model_type == "rf":
             model = train_random_forest(X_group, y_group, seed)
         elif model_type == "mlp":
-            model = train_mlp(X_group, y_group, seed)
+            model = train_mlp(X_group, y_group, seed, epochs=epochs)
         else:
             raise ValueError("model_type must be 'rf' or 'mlp'")
         models.append(model)
