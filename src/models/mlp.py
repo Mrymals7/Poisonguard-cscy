@@ -31,8 +31,10 @@ def train_mlp(X, y, seed=42, epochs=10, batch_size=256, lr=1e-3):
     y_t = torch.tensor(y.values, dtype=torch.long)
 
     # Give attacks more weight because they are rarer (like class_weight="balanced")
-    counts = torch.bincount(y_t)
-    weights = len(y_t) / (2 * counts.float())
+    counts = torch.bincount(y_t, minlength=2)
+    weights = torch.ones(2, dtype=torch.float32)
+    present = counts > 0
+    weights[present] = len(y_t) / (2 * counts[present].float())
 
     model = MLP(n_features=X_t.shape[1])
     loss_fn = nn.CrossEntropyLoss(weight=weights)
