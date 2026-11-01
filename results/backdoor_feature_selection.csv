@@ -1,0 +1,5 @@
+feature,importance,rank_out_of_80,selected
+Fwd Packet Length Std,0.004093696276800771,49,True
+Bwd IAT Std,0.004615208212459922,44,True
+Fwd IAT Std,0.014228296138125315,21,False
+Bwd Packet Length Std,0.06093426183174716,3,False
