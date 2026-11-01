@@ -101,11 +101,12 @@ A training point is relabelled if most of its nearest neighbours disagree with i
 
 - The number of neighbours is tuned on the validation set.
 - **Applied to:** Random Forest and MLP.
+
 The implemented k-NN pilot uses 5,000 stratified training samples with 10% random label flipping and seed 42. Each point is excluded from its own neighbour search. Labels are updated simultaneously from the original observed labels; a strict neighbour majority determines the replacement label, while ties retain the existing label.
 
 Candidate values k = 3, 5, 7 and 11 were compared using Random Forest validation F1. This selected k = 7, which was then evaluated with both Random Forest and MLP. This selection criterion does not establish that k = 7 is optimal for MLP. Validation results are exploratory and are not final test results.
 
-The pilot is implemented in `scripts/knn_trial.py`.
+The pilot is implemented in `scripts/knn_trial.py`. A separate targeted-flipping pilot at seed 42 selected k = 3 using the same candidate values and Random Forest validation F1. The subsequent three-seed sweep fixes k = 7 for both attack types rather than retuning it per attack or seed. This is a fixed-parameter comparison, not evidence that k = 7 is optimal for targeted flipping.
 
 #### b. Partition-Based Ensemble [13], [14]
 
@@ -115,11 +116,12 @@ Several models are trained on disjoint partitions of the training data and combi
 - The number of partitions is chosen to leave each model enough training data.
 - This approach differs from the bootstrap sampling inside a Random Forest.
 - **Applied to:** Random Forest and MLP.
+
 The partition ensemble pilot uses 5,000 stratified training samples, seed 42 and 10% random label flipping. Clean and poisoned labels are evaluated using the same training subset and partition assignment. Each sample belongs to one partition, and predictions are combined by majority vote.
 
 The initial comparison used 3 partitions. Additional Random Forest experiments used 11, 25 and 51 partitions. The MLP sweep used 3, 11, 25 and 51 partitions, with 100 epochs per model following an initial 10-epoch pilot. Increasing the partition count reduces the training samples available to each model. Equal epoch counts also do not imply equal numbers of optimizer updates across partition sizes.
 
-These are single-seed validation experiments. Clean and poisoned single MLP baselines were also trained for 100 epochs on the same 5,000-sample subset. The implementation does not provide a certified robustness guarantee.
+These partition-count pilots are single-seed validation experiments. Clean and poisoned single MLP baselines were also trained for 100 epochs on the same 5,000-sample subset. The implementation does not provide a certified robustness guarantee.
 
 The pilot is implemented in `scripts/ensemble_trial.py`; settings, results and limitations are recorded in `results/ensemble_trial_seed42_notes.md`.
 
@@ -128,6 +130,7 @@ The pilot is implemented in `scripts/ensemble_trial.py`; settings, results and l
 Suspicious samples are identified and removed using the MLP's hidden-layer representations. The model is then retrained on the filtered data.
 
 - **Applied to:** MLP only.
+
 The spectral pilot uses 15,000 stratified training samples and seed 42. Backdoor poisoning modifies 300 malicious samples (2% of the training subset) and relabels them as benign. The normalized trigger values are Bwd IAT Std = 0.02220528 and Fwd Packet Length Std = 0.01483571.
 
 An MLP is trained on the poisoned data for 10 epochs. Hidden activations are centred separately within each observed class. Singular value decomposition identifies the leading direction, and squared projections onto this direction provide suspicion scores. The highest-scoring 3% of samples in each observed class are removed, rounded up while retaining at least one sample per class.
@@ -145,9 +148,16 @@ The model is retrained on training data augmented with adversarial examples.
 
 ### 6. Repetition
 
-The full evaluation is planned to use multiple random seeds, with results reported as the mean and spread across repeated runs.
+The initial k-NN, partition-count and spectral pilots use seed 42. A subsequent label-flipping validation sweep has been completed with seeds 1, 2 and 3 using `src/run_experiments.py`.
 
-The defence pilots documented here currently use seed 42 only. Their results are preliminary validation findings; evaluation across additional seeds and poisoning rates remains pending.
+The sweep uses one fixed stratified subset of 5,000 training samples selected with subset seed 42 and the same untouched validation split. Random and targeted label flipping are evaluated at 1%, 5%, 10% and 20% of the total training subset, corresponding to 50, 250, 500 and 1,000 changed labels. For each attack, rate and seed, both models and all defence options receive the same poisoned labels. No defence, k-NN with fixed k = 7, and an ensemble of 3 disjoint partitions are compared. Clean-training controls are also evaluated for each option. Single MLPs and each MLP ensemble member use 100 epochs.
+
+The completed sweep contains 162 result rows: 18 clean controls and 144 attacked configurations. Each of the 54 model/attack/rate/defence groups contains three runs. Precision, recall, F1 and false-positive rate are reported as the mean and sample standard deviation across seeds. The seeds vary poisoning selection, model training and partition assignment, while the training subset and validation split remain fixed. Equal epoch counts do not equalize optimizer updates or total computation.
+
+The MLP class-weight calculation supports a training set containing only one observed class by retaining two finite class weights. The balanced-weight calculation is unchanged when both classes are present. A run interrupted by the original single-class error was resumed after this fix, retaining 148 completed rows and adding the remaining 14. Both single-class training cases and the existing 44 automated tests passed.
+
+Results, summaries and interpretation are recorded in `results/defences_val_seeds123.csv`, `results/defences_val_seeds123_summary.csv` and `results/defences_val_seeds123_notes.md`. These are validation findings, not final held-out test results. The spectral backdoor experiment remains a separate single-seed pilot. Repetition of spectral filtering across additional seeds and poisoning rates remains pending.
+
 ---
 
 ## D. Evaluation Plan
@@ -170,7 +180,7 @@ The project aims to achieve:
 
 | Measure | Purpose |
 |---|---|
-| Precision, Recall, F1 Score | Detection quality on the clean test set. |
+| Precision, Recall, F1 Score | Detection quality on untouched validation data during development and on the clean test set for final evaluation. |
 | False-Positive Rate | Operational usability, since false alarms are costly. |
 | Backdoor Attack Success Rate | Share of triggered malicious flows classified as benign. |
 | Detection Rate on Evasive Flows | Robustness against inference-time attacks. |
@@ -180,7 +190,7 @@ The project aims to achieve:
 
 Results come from a single benchmark dataset (**CICIDS2017**), so they may not generalise to other networks or current traffic.
 
-To avoid data leakage, the test set is never used for training, poisoning, or tuning.
+To avoid data leakage, the test set is never used for training, poisoning, or tuning. The completed defence sweep uses validation data. Earlier hyperparameter exploration also used this validation split, so these findings may reflect selection effects and should not be presented as unbiased final test estimates. Three seeds on one fixed training subset measure only part of the possible experimental variation. Defence benefits depend on the model, attack and poisoning rate; no universal improvement or certified robustness guarantee is claimed.
 
 Cross-dataset and temporal evaluation are left as future work.
 
