@@ -119,7 +119,7 @@ The partition ensemble pilot uses 5,000 stratified training samples, seed 42 and
 
 The initial comparison used 3 partitions. Additional Random Forest experiments used 11, 25 and 51 partitions. The MLP sweep used 3, 11, 25 and 51 partitions, with 100 epochs per model following an initial 10-epoch pilot. Increasing the partition count reduces the training samples available to each model. Equal epoch counts also do not imply equal numbers of optimizer updates across partition sizes.
 
-These are single-seed validation experiments. A single MLP trained for 100 epochs is still required for a matched comparison with the 100-epoch ensembles. The implementation does not provide a certified robustness guarantee.
+These are single-seed validation experiments. Clean and poisoned single MLP baselines were also trained for 100 epochs on the same 5,000-sample subset. The implementation does not provide a certified robustness guarantee.
 
 The pilot is implemented in `scripts/ensemble_trial.py`; settings, results and limitations are recorded in `results/ensemble_trial_seed42_notes.md`.
 

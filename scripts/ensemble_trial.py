@@ -92,3 +92,21 @@ if __name__ == "__main__":
             scores = evaluate(y_val, pred)
             for name, value in scores.items():
                 print(f"{name}: {value:.4f}")
+    for training_name, labels in [
+        ("Clean", y_small),
+        ("Poisoned", poisoned_labels),
+    ]:
+        print(
+            f"\n{training_name} single MLP: 100 epochs",
+            flush=True,
+        )
+        model = train_mlp(
+            X_small,
+            labels,
+            seed=42,
+            epochs=100,
+        )
+        pred = predict_mlp(model, X_val)
+        scores = evaluate(y_val, pred)
+        for name, value in scores.items():
+            print(f"{name}: {value:.4f}")

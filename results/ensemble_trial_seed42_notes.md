@@ -32,9 +32,23 @@
 - Larger partition counts reduced F1 in this experiment.
 - Equal epoch counts do not give equal numbers of optimizer updates when partition sizes differ.
 - These are exploratory validation results from one seed and one poisoning rate.
-- A single MLP trained for 100 epochs is still needed for a matched comparison with the 100-epoch ensembles.
+- Single MLP baselines at 100 epochs are now included for comparison.
 - These results do not establish robustness to targeted label flipping or backdoor attacks.
 
 ## Raw logs
 - results/ensemble_trial_seed42.txt
 - results/ensemble_trial_mlp100_seed42.txt
+
+## Single MLP baselines — 100 epochs
+
+| Training | Precision | Recall | F1 | FPR |
+|---|---:|---:|---:|---:|
+| Clean | 0.9771 | 0.9884 | 0.9827 | 0.0059 |
+| Poisoned | 0.9280 | 0.9869 | 0.9565 | 0.0195 |
+
+The single MLP achieved higher validation F1 than all tested MLP
+partition ensembles under both clean and poisoned training.
+This pilot therefore does not demonstrate an MLP ensemble benefit.
+All comparisons use seed 42; equal epochs do not equalize optimizer updates.
+
+Raw log: results/ensemble_trial_with_single100_seed42.txt
