@@ -101,6 +101,11 @@ A training point is relabelled if most of its nearest neighbours disagree with i
 
 - The number of neighbours is tuned on the validation set.
 - **Applied to:** Random Forest and MLP.
+The implemented k-NN pilot uses 5,000 stratified training samples with 10% random label flipping and seed 42. Each point is excluded from its own neighbour search. Labels are updated simultaneously from the original observed labels; a strict neighbour majority determines the replacement label, while ties retain the existing label.
+
+Candidate values k = 3, 5, 7 and 11 were compared using Random Forest validation F1. This selected k = 7, which was then evaluated with both Random Forest and MLP. This selection criterion does not establish that k = 7 is optimal for MLP. Validation results are exploratory and are not final test results.
+
+The pilot is implemented in `scripts/knn_trial.py`.
 
 #### b. Partition-Based Ensemble [13], [14]
 
@@ -110,12 +115,26 @@ Several models are trained on disjoint partitions of the training data and combi
 - The number of partitions is chosen to leave each model enough training data.
 - This approach differs from the bootstrap sampling inside a Random Forest.
 - **Applied to:** Random Forest and MLP.
+The partition ensemble pilot uses 5,000 stratified training samples, seed 42 and 10% random label flipping. Clean and poisoned labels are evaluated using the same training subset and partition assignment. Each sample belongs to one partition, and predictions are combined by majority vote.
+
+The initial comparison used 3 partitions. Additional Random Forest experiments used 11, 25 and 51 partitions. The MLP sweep used 3, 11, 25 and 51 partitions, with 100 epochs per model following an initial 10-epoch pilot. Increasing the partition count reduces the training samples available to each model. Equal epoch counts also do not imply equal numbers of optimizer updates across partition sizes.
+
+These are single-seed validation experiments. A single MLP trained for 100 epochs is still required for a matched comparison with the 100-epoch ensembles. The implementation does not provide a certified robustness guarantee.
+
+The pilot is implemented in `scripts/ensemble_trial.py`; settings, results and limitations are recorded in `results/ensemble_trial_seed42_notes.md`.
 
 #### c. Spectral Signatures [12]
 
 Suspicious samples are identified and removed using the MLP's hidden-layer representations. The model is then retrained on the filtered data.
 
 - **Applied to:** MLP only.
+The spectral pilot uses 15,000 stratified training samples and seed 42. Backdoor poisoning modifies 300 malicious samples (2% of the training subset) and relabels them as benign. The normalized trigger values are Bwd IAT Std = 0.02220528 and Fwd Packet Length Std = 0.01483571.
+
+An MLP is trained on the poisoned data for 10 epochs. Hidden activations are centred separately within each observed class. Singular value decomposition identifies the leading direction, and squared projections onto this direction provide suspicion scores. The highest-scoring 3% of samples in each observed class are removed, rounded up while retaining at least one sample per class.
+
+A new MLP is trained from scratch on the filtered data. Clean, poisoned and filtered models use seed 42 and 10 epochs. Classification metrics use untouched validation data. Attack success rate is the proportion of all 6,098 malicious validation samples classified as benign after applying the trigger. Known poisoned indices are used only to report removal counts, not to select samples for filtering.
+
+The pilot is implemented in `scripts/spectral_trial.py`. Results and limitations are recorded in `results/spectral_trial_seed42_notes.md`. This single-seed pilot did not demonstrate reduced attack success after filtering.
 
 #### d. Adversarial Training [15]
 
@@ -126,10 +145,9 @@ The model is retrained on training data augmented with adversarial examples.
 
 ### 6. Repetition
 
-Each experiment is repeated with multiple random seeds.
+The full evaluation is planned to use multiple random seeds, with results reported as the mean and spread across repeated runs.
 
-Results are reported using the **mean and spread** across repeated runs.
-
+The defence pilots documented here currently use seed 42 only. Their results are preliminary validation findings; evaluation across additional seeds and poisoning rates remains pending.
 ---
 
 ## D. Evaluation Plan
