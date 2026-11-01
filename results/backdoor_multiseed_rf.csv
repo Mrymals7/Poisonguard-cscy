@@ -1,0 +1,7 @@
+seed,model,training,poisoned_samples,clean_malicious_recall,triggered_benign_rate
+7,Random Forest,Clean,0,0.996,0.004
+7,Random Forest,Poisoned,300,0.996,0.922
+42,Random Forest,Clean,0,0.996,0.004
+42,Random Forest,Poisoned,300,0.998,0.936
+123,Random Forest,Clean,0,0.996,0.004
+123,Random Forest,Poisoned,300,0.99,0.908
