@@ -10,15 +10,15 @@ from src.attacks.pgd import pgd_attack
 
 def adversarial_train_mlp(
     X_train, y_train, epsilon=0.01, n_samples=10000,
-    allowed_features=None, attack_type="fgsm"
+    allowed_features=None, attack_type="fgsm", seed=42
 ):
     """Train an MLP using clean and adversarial examples."""
 
-    model = train_mlp(X_train, y_train)
+    model = train_mlp(X_train, y_train, seed=seed)
 
     X_sample = X_train.sample(
         n=min(n_samples, len(X_train)),
-        random_state=42
+        random_state=seed
     )
     y_sample = y_train.loc[X_sample.index]
 
@@ -49,7 +49,7 @@ def adversarial_train_mlp(
         [y_train, y_sample], ignore_index=True
     )
 
-    defended_model = train_mlp(X_combined, y_combined)
+    defended_model = train_mlp(X_combined, y_combined, seed=seed)
 
     return defended_model
 
