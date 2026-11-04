@@ -14,6 +14,7 @@ from src.models.random_forest import train_random_forest
 from src.models.mlp import train_mlp, predict_mlp
 from src.evaluation.metrics import evaluate, attack_success_rate, per_class_detection
 from src.attacks.label_flipping import random_label_flipping, targeted_label_flipping
+from src.attacks.backdoor import apply_backdoor
 
 # Each model: (training function, prediction function)
 MODELS = {
@@ -28,10 +29,28 @@ ATTACKS = {
 }
 RATES = [0.01, 0.05, 0.10, 0.20]
 
+# Backdoor trigger, as chosen by Maryam (src/evaluation/backdoor_feature_selection.py)
+TRIGGER_FEATURES = ["Bwd IAT Std", "Fwd Packet Length Std"]
+ALL_ATTACKS = list(ATTACKS) + ["backdoor"]
+
+
+def make_trigger(X_train, y_train):
+    """Trigger value per feature = 75th percentile of benign training flows (same as Maryam's pilot)."""
+    benign = X_train[y_train == 0]
+    return [float(benign[feature].quantile(0.75)) for feature in TRIGGER_FEATURES]
+
+
+def add_trigger(X, trigger_values):
+    """Return a copy of X with the trigger values written into the trigger features."""
+    X_triggered = X.copy()
+    for feature, value in zip(TRIGGER_FEATURES, trigger_values):
+        X_triggered[feature] = value
+    return X_triggered
+
 
 def run_one(model_name, seed, X_train, y_train, X_test, y_test,
             attack="none", rate=0.0, defence="none", attack_type_test=None,
-            k=7, n_partitions=3, epochs=10):
+            k=7, n_partitions=3, epochs=10, X_triggered=None):
     """Train one model on the given training data, score it on the test set, return one result row."""
     train_fn, predict_fn = MODELS[model_name]
 
@@ -76,6 +95,12 @@ def run_one(model_name, seed, X_train, y_train, X_test, y_test,
     })
     row.update(evaluate(y_test, pred))
     row["asr_clean_attacks"] = attack_success_rate(pred[y_test.values == 1])
+    if X_triggered is not None:
+        if defence == "partition":
+            triggered_pred = predict_partition_ensemble(model, X_triggered, model_type=model_type)
+        else:
+            triggered_pred = predict_fn(model, X_triggered)
+        row["asr_backdoor"] = attack_success_rate(triggered_pred)
     row["train_time_s"] = round(train_time, 1)
     if attack_type_test is not None:
         for name, value in per_class_detection(pred, attack_type_test).items():
@@ -87,7 +112,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Label-flipping and defence evaluation")
     parser.add_argument("--defences", nargs="+", choices=["none", "knn", "partition"], default=["none"])
     parser.add_argument("--models", nargs="+", choices=list(MODELS), default=list(MODELS))
-    parser.add_argument("--attacks", nargs="+", choices=list(ATTACKS), default=list(ATTACKS))
+    parser.add_argument("--attacks", nargs="+", choices=ALL_ATTACKS, default=ALL_ATTACKS)
     parser.add_argument("--seeds", nargs="+", type=int, default=SEEDS)
     parser.add_argument("--rates", nargs="+", type=float, default=RATES)
     parser.add_argument("--split", choices=["val", "test"], default="test")
@@ -123,10 +148,14 @@ def main():
         raise ValueError("k must be smaller than the training sample count")
     if "partition" in args.defences and args.partitions > len(X_train):
         raise ValueError("Too many partitions for the training sample count")
-    if "targeted_flip" in args.attacks:
+    if "targeted_flip" in args.attacks or "backdoor" in args.attacks:
         for rate in args.rates:
             if int(len(y_train) * rate) > int((y_train == 1).sum()):
-                raise ValueError(f"Not enough malicious samples for targeted rate {rate}")
+                raise ValueError(f"Not enough malicious samples for targeted/backdoor rate {rate}")
+
+    # Every evaluation attack flow, with the backdoor trigger added
+    trigger_values = make_trigger(X_train, y_train)
+    X_triggered = add_trigger(X_test[y_test == 1], trigger_values)
 
     # Default baseline-only invocation retains the original output location.
     output = args.output or (
@@ -136,12 +165,13 @@ def main():
     output.parent.mkdir(parents=True, exist_ok=True)
     rows = []
 
-    def record(model_name, seed, labels, attack, rate, defence):
+    def record(model_name, seed, labels, attack, rate, defence, features=None):
         print(f"Running {model_name}, {attack}, {rate:.0%}, {defence}, seed {seed}...", flush=True)
         row = run_one(
-            model_name, seed, X_train, labels, X_test, y_test,
+            model_name, seed, X_train if features is None else features, labels, X_test, y_test,
             attack=attack, rate=rate, defence=defence, attack_type_test=at_test,
             k=args.k, n_partitions=args.partitions, epochs=args.epochs,
+            X_triggered=X_triggered,
         )
         row["evaluation_split"] = args.split
         row["subset_seed"] = args.subset_seed if args.train_size is not None else None
@@ -159,15 +189,21 @@ def main():
     for attack_name in args.attacks:
         for rate in args.rates:
             for seed in args.seeds:
-                poisoned, _ = ATTACKS[attack_name](y_train, rate, seed=seed)
+                if attack_name == "backdoor":
+                    # Trigger added to some training attack flows, which are relabelled benign
+                    features, poisoned, _ = apply_backdoor(
+                        X_train, y_train, rate, TRIGGER_FEATURES, trigger_values, seed=seed)
+                else:
+                    features = None
+                    poisoned, _ = ATTACKS[attack_name](y_train, rate, seed=seed)
                 poisoned = pd.Series(poisoned, index=y_train.index)
                 for model_name in args.models:
                     for defence in dict.fromkeys(args.defences):
-                        record(model_name, seed, poisoned, attack_name, rate, defence)
+                        record(model_name, seed, poisoned, attack_name, rate, defence, features)
 
     results = pd.DataFrame(rows)
     summary = results.groupby(["model", "attack", "rate", "defence"])[
-        ["precision", "recall", "f1", "fpr"]
+        ["precision", "recall", "f1", "fpr", "asr_backdoor"]
     ].agg(["mean", "std", "count"])
     summary.to_csv(output.with_name(output.stem + "_summary.csv"))
     print(summary.round(4))
