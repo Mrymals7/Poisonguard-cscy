@@ -1,0 +1,50 @@
+model,training_attack,training_epsilon,seed,evaluation_attack,attack_epsilon,recall
+Baseline MLP,none,0.0,42,clean,0.0,0.99
+Baseline MLP,none,0.0,42,fgsm,0.01,0.89
+Baseline MLP,none,0.0,42,fgsm,0.03,0.83
+Baseline MLP,none,0.0,42,fgsm,0.05,0.67
+Baseline MLP,none,0.0,42,pgd,0.01,0.89
+Baseline MLP,none,0.0,42,pgd,0.03,0.82
+Baseline MLP,none,0.0,42,pgd,0.05,0.66
+Defended MLP - FGSM - epsilon 0.01,fgsm,0.01,42,clean,0.0,0.97
+Defended MLP - FGSM - epsilon 0.01,fgsm,0.01,42,fgsm,0.01,0.86
+Defended MLP - FGSM - epsilon 0.01,fgsm,0.01,42,fgsm,0.03,0.3
+Defended MLP - FGSM - epsilon 0.01,fgsm,0.01,42,fgsm,0.05,0.08
+Defended MLP - FGSM - epsilon 0.01,fgsm,0.01,42,pgd,0.01,0.86
+Defended MLP - FGSM - epsilon 0.01,fgsm,0.01,42,pgd,0.03,0.29
+Defended MLP - FGSM - epsilon 0.01,fgsm,0.01,42,pgd,0.05,0.08
+Defended MLP - FGSM - epsilon 0.03,fgsm,0.03,42,clean,0.0,0.99
+Defended MLP - FGSM - epsilon 0.03,fgsm,0.03,42,fgsm,0.01,0.87
+Defended MLP - FGSM - epsilon 0.03,fgsm,0.03,42,fgsm,0.03,0.47
+Defended MLP - FGSM - epsilon 0.03,fgsm,0.03,42,fgsm,0.05,0.16
+Defended MLP - FGSM - epsilon 0.03,fgsm,0.03,42,pgd,0.01,0.87
+Defended MLP - FGSM - epsilon 0.03,fgsm,0.03,42,pgd,0.03,0.46
+Defended MLP - FGSM - epsilon 0.03,fgsm,0.03,42,pgd,0.05,0.16
+Defended MLP - FGSM - epsilon 0.05,fgsm,0.05,42,clean,0.0,0.97
+Defended MLP - FGSM - epsilon 0.05,fgsm,0.05,42,fgsm,0.01,0.87
+Defended MLP - FGSM - epsilon 0.05,fgsm,0.05,42,fgsm,0.03,0.66
+Defended MLP - FGSM - epsilon 0.05,fgsm,0.05,42,fgsm,0.05,0.27
+Defended MLP - FGSM - epsilon 0.05,fgsm,0.05,42,pgd,0.01,0.87
+Defended MLP - FGSM - epsilon 0.05,fgsm,0.05,42,pgd,0.03,0.66
+Defended MLP - FGSM - epsilon 0.05,fgsm,0.05,42,pgd,0.05,0.27
+Defended MLP - PGD - epsilon 0.01,pgd,0.01,42,clean,0.0,0.99
+Defended MLP - PGD - epsilon 0.01,pgd,0.01,42,fgsm,0.01,0.85
+Defended MLP - PGD - epsilon 0.01,pgd,0.01,42,fgsm,0.03,0.29
+Defended MLP - PGD - epsilon 0.01,pgd,0.01,42,fgsm,0.05,0.08
+Defended MLP - PGD - epsilon 0.01,pgd,0.01,42,pgd,0.01,0.85
+Defended MLP - PGD - epsilon 0.01,pgd,0.01,42,pgd,0.03,0.29
+Defended MLP - PGD - epsilon 0.01,pgd,0.01,42,pgd,0.05,0.08
+Defended MLP - PGD - epsilon 0.03,pgd,0.03,42,clean,0.0,0.98
+Defended MLP - PGD - epsilon 0.03,pgd,0.03,42,fgsm,0.01,0.87
+Defended MLP - PGD - epsilon 0.03,pgd,0.03,42,fgsm,0.03,0.43
+Defended MLP - PGD - epsilon 0.03,pgd,0.03,42,fgsm,0.05,0.16
+Defended MLP - PGD - epsilon 0.03,pgd,0.03,42,pgd,0.01,0.87
+Defended MLP - PGD - epsilon 0.03,pgd,0.03,42,pgd,0.03,0.43
+Defended MLP - PGD - epsilon 0.03,pgd,0.03,42,pgd,0.05,0.16
+Defended MLP - PGD - epsilon 0.05,pgd,0.05,42,clean,0.0,0.97
+Defended MLP - PGD - epsilon 0.05,pgd,0.05,42,fgsm,0.01,0.87
+Defended MLP - PGD - epsilon 0.05,pgd,0.05,42,fgsm,0.03,0.64
+Defended MLP - PGD - epsilon 0.05,pgd,0.05,42,fgsm,0.05,0.25
+Defended MLP - PGD - epsilon 0.05,pgd,0.05,42,pgd,0.01,0.87
+Defended MLP - PGD - epsilon 0.05,pgd,0.05,42,pgd,0.03,0.61
+Defended MLP - PGD - epsilon 0.05,pgd,0.05,42,pgd,0.05,0.25

@@ -1,0 +1,96 @@
+Single Random Forest
+precision: 0.8774
+recall: 0.9820
+f1: 0.9267
+fpr: 0.0350
+Partition Ensemble
+precision: 0.9742
+recall: 0.9784
+f1: 0.9763
+fpr: 0.0066
+Epoch 1/10 - loss 0.6557
+Epoch 2/10 - loss 0.5513
+Epoch 3/10 - loss 0.5000
+Epoch 4/10 - loss 0.4927
+Epoch 5/10 - loss 0.4815
+Epoch 6/10 - loss 0.4740
+Epoch 7/10 - loss 0.4673
+Epoch 8/10 - loss 0.4624
+Epoch 9/10 - loss 0.4582
+Epoch 10/10 - loss 0.4546
+Single MLP
+precision: 0.9029
+recall: 0.9592
+f1: 0.9302
+fpr: 0.0263
+Epoch 1/10 - loss 0.6822
+Epoch 2/10 - loss 0.6556
+Epoch 3/10 - loss 0.6221
+Epoch 4/10 - loss 0.5826
+Epoch 5/10 - loss 0.5448
+Epoch 6/10 - loss 0.5210
+Epoch 7/10 - loss 0.5076
+Epoch 8/10 - loss 0.5025
+Epoch 9/10 - loss 0.4995
+Epoch 10/10 - loss 0.4960
+Epoch 1/10 - loss 0.6820
+Epoch 2/10 - loss 0.6547
+Epoch 3/10 - loss 0.6209
+Epoch 4/10 - loss 0.5786
+Epoch 5/10 - loss 0.5362
+Epoch 6/10 - loss 0.5093
+Epoch 7/10 - loss 0.5011
+Epoch 8/10 - loss 0.4972
+Epoch 9/10 - loss 0.4929
+Epoch 10/10 - loss 0.4887
+Epoch 1/10 - loss 0.6812
+Epoch 2/10 - loss 0.6539
+Epoch 3/10 - loss 0.6190
+Epoch 4/10 - loss 0.5757
+Epoch 5/10 - loss 0.5335
+Epoch 6/10 - loss 0.5037
+Epoch 7/10 - loss 0.4887
+Epoch 8/10 - loss 0.4836
+Epoch 9/10 - loss 0.4809
+Epoch 10/10 - loss 0.4757
+MLP Partition Ensemble
+precision: 0.6964
+recall: 0.8308
+f1: 0.7576
+fpr: 0.0924
+
+Clean RF: 11 partitions
+precision: 0.9945
+recall: 0.9567
+f1: 0.9753
+fpr: 0.0013
+
+Clean RF: 25 partitions
+precision: 0.9940
+recall: 0.9167
+f1: 0.9538
+fpr: 0.0014
+
+Clean RF: 51 partitions
+precision: 0.9828
+recall: 0.8547
+f1: 0.9143
+fpr: 0.0038
+
+Poisoned RF: 11 partitions
+precision: 0.9936
+recall: 0.9616
+f1: 0.9773
+fpr: 0.0016
+
+Poisoned RF: 25 partitions
+precision: 0.9898
+recall: 0.9360
+f1: 0.9622
+fpr: 0.0025
+
+Poisoned RF: 51 partitions
+precision: 0.9794
+recall: 0.8555
+f1: 0.9133
+fpr: 0.0046
