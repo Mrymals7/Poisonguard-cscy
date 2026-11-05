@@ -9,6 +9,7 @@ from src.defences.knn_sanitisation import sanitise_labels
 from src.defences.partition_ensemble import (
     train_partition_ensemble, predict_partition_ensemble,
 )
+from src.defences.spectral_signatures import extract_hidden_activations, spectral_keep_mask
 from src.data import load_processed
 from src.models.random_forest import train_random_forest
 from src.models.mlp import train_mlp, predict_mlp
@@ -32,6 +33,7 @@ RATES = [0.01, 0.05, 0.10, 0.20]
 # Backdoor trigger, as chosen by Maryam (src/evaluation/backdoor_feature_selection.py)
 TRIGGER_FEATURES = ["Bwd IAT Std", "Fwd Packet Length Std"]
 ALL_ATTACKS = list(ATTACKS) + ["backdoor"]
+DEFENCES = ["none", "knn", "partition", "spectral"]
 
 
 def make_trigger(X_train, y_train):
@@ -54,8 +56,10 @@ def run_one(model_name, seed, X_train, y_train, X_test, y_test,
     """Train one model on the given training data, score it on the test set, return one result row."""
     train_fn, predict_fn = MODELS[model_name]
 
-    if defence not in {"none", "knn", "partition"}:
+    if defence not in DEFENCES:
         raise ValueError(f"Unknown defence: {defence}")
+    if defence == "spectral" and model_name != "mlp":
+        raise ValueError("Spectral signatures needs the MLP's hidden layer")
     if epochs < 1 or not 1 <= n_partitions <= len(X_train):
         raise ValueError("Check epochs and partition count")
     if defence == "knn" and not 1 <= k < len(X_train):
@@ -66,6 +70,17 @@ def run_one(model_name, seed, X_train, y_train, X_test, y_test,
     if defence == "knn":
         cleaned = sanitise_labels(X_train, y_train, k=k)
         y_train = pd.Series(cleaned, index=y_train.index)
+        defence_time = time.perf_counter() - start
+    n_removed = None
+    if defence == "spectral":
+        # Train on the (possibly poisoned) data, score samples by their hidden-layer
+        # activations, drop the most suspicious ones, then retrain below on the rest.
+        # Removal fraction = 1.5 x poisoning rate (the margin used by Tran et al.)
+        first_model = train_fn(X_train, y_train, seed=seed, epochs=epochs)
+        activations = extract_hidden_activations(first_model, X_train)
+        keep = spectral_keep_mask(activations, y_train, removal_fraction=min(1.5 * rate, 0.5))
+        n_removed = int((~keep).sum())
+        X_train, y_train = X_train[keep], y_train[keep]
         defence_time = time.perf_counter() - start
     if defence == "partition":
         model_type = "rf" if model_name == "random_forest" else "mlp"
@@ -90,6 +105,7 @@ def run_one(model_name, seed, X_train, y_train, X_test, y_test,
         "n_partitions": n_partitions if defence == "partition" else None,
         "epochs": epochs if model_name == "mlp" else None,
         "n_train": len(X_train),
+        "n_removed": n_removed,
         "defence_time_s": round(defence_time, 4),
         "fit_total_time_s": round(total_time, 4),
     })
@@ -110,7 +126,7 @@ def run_one(model_name, seed, X_train, y_train, X_test, y_test,
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Label-flipping and defence evaluation")
-    parser.add_argument("--defences", nargs="+", choices=["none", "knn", "partition"], default=["none"])
+    parser.add_argument("--defences", nargs="+", choices=DEFENCES, default=["none"])
     parser.add_argument("--models", nargs="+", choices=list(MODELS), default=list(MODELS))
     parser.add_argument("--attacks", nargs="+", choices=ALL_ATTACKS, default=ALL_ATTACKS)
     parser.add_argument("--seeds", nargs="+", type=int, default=SEEDS)
@@ -166,6 +182,8 @@ def main():
     rows = []
 
     def record(model_name, seed, labels, attack, rate, defence, features=None):
+        if defence == "spectral" and model_name != "mlp":
+            return  # spectral signatures only applies to the MLP
         print(f"Running {model_name}, {attack}, {rate:.0%}, {defence}, seed {seed}...", flush=True)
         row = run_one(
             model_name, seed, X_train if features is None else features, labels, X_test, y_test,
