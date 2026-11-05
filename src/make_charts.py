@@ -3,12 +3,22 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import pandas as pd
 
 RESULTS_FILE = Path("results/results.csv")
 FIGURES_DIR = Path("results/figures")
+DEFENCES_FILE = Path("results/backdoor_defences.csv")
+TARGET_ASR = 0.10  # Deliverable 1 target: backdoor success below 10% at a 10% poisoning rate
 
 MODEL_NAMES = {"random_forest": "Random Forest", "mlp": "MLP"}
+MODEL_STYLE = {"random_forest": ("#2a78d6", "o"), "mlp": ("#eb6834", "s")}
+DEFENCE_STYLE = {
+    "none": ("No defence", "#9a9a9a"),
+    "knn": ("k-NN sanitisation", "#2a78d6"),
+    "partition": ("Partition ensemble", "#1baf7a"),
+    "spectral": ("Spectral signatures (MLP only)", "#eb6834"),
+}
 ATTACK_STYLE = {
     "random_flip": ("Random flipping", "#2a78d6", "o"),
     "targeted_flip": ("Targeted flipping", "#eb6834", "s"),
@@ -89,6 +99,64 @@ def plot_per_class(results):
     plt.close(fig)
 
 
+def plot_backdoor_rate(results):
+    """Backdoor success rate against poisoning rate, one line per model (no defence)."""
+    clean = results[results["attack"] == "none"]
+    backdoor = results[results["attack"] == "backdoor"]
+    table = pd.concat([clean, backdoor]).groupby(["model", "rate"])["asr_backdoor"].agg(["mean", "std"]).reset_index()
+
+    fig, ax = plt.subplots(figsize=(7, 4.2))
+    for model, (color, marker) in MODEL_STYLE.items():
+        part = table[table["model"] == model]
+        ax.errorbar(part["rate"] * 100, part["mean"], yerr=part["std"], label=MODEL_NAMES[model],
+                    color=color, marker=marker, markersize=6, linewidth=2, capsize=3)
+    ax.axhline(TARGET_ASR, color="#555555", linestyle="--", linewidth=1)
+    ax.text(20, TARGET_ASR + 0.02, "Target: below 10%", ha="right", fontsize=9, color="#555555")
+    ax.set_xticks([0, 1, 5, 10, 20])
+    ax.set_ylim(0, 1.05)
+    ax.set_xlabel("Poisoning rate (% of training rows)")
+    ax.set_ylabel("Backdoor success rate")
+    ax.legend(frameon=False, loc="center right")
+    ax.set_title("Backdoor attack: triggered attacks classified benign (no defence)", fontsize=12)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "backdoor_success.png", dpi=200)
+    plt.close(fig)
+
+
+def plot_backdoor_defences(defences):
+    """Backdoor success at 1% and 10% poisoning for each defence, one panel per model."""
+    attacked = defences[defences["attack"] == "backdoor"]
+    table = attacked.groupby(["model", "rate", "defence"])["asr_backdoor"].agg(["mean", "std"]).reset_index()
+    rates = sorted(table["rate"].unique())
+
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.4), sharey=True)
+    for ax, model in zip(axes, MODEL_NAMES):
+        part = table[table["model"] == model]
+        names = [d for d in DEFENCE_STYLE if d in set(part["defence"])]
+        width = 0.8 / len(names)
+        for i, defence in enumerate(names):
+            label, color = DEFENCE_STYLE[defence]
+            rows = part[part["defence"] == defence].set_index("rate").reindex(rates)
+            positions = [r + (i - (len(names) - 1) / 2) * width for r in range(len(rates))]
+            ax.bar(positions, rows["mean"], width * 0.9, yerr=rows["std"], color=color,
+                   label=label, capsize=2, edgecolor="white", linewidth=1)
+        ax.axhline(TARGET_ASR, color="#555555", linestyle="--", linewidth=1)
+        ax.set_xticks(range(len(rates)))
+        ax.set_xticklabels([f"{r:.0%} poisoned" for r in rates])
+        ax.set_title(MODEL_NAMES[model], fontweight="bold")
+        ax.set_ylim(0, 1.05)
+        ax.grid(axis="x", visible=False)
+    axes[0].set_ylabel("Backdoor success rate")
+    handles, labels = axes[1].get_legend_handles_labels()
+    handles.append(Line2D([], [], color="#555555", linestyle="--", linewidth=1))
+    labels.append("Target: below 10%")
+    fig.legend(handles, labels, frameon=False, loc="lower center", ncol=5)
+    fig.suptitle("Backdoor success with each defence (mean over 3 seeds)", fontsize=12)
+    fig.tight_layout(rect=(0, 0.08, 1, 1))
+    fig.savefig(FIGURES_DIR / "backdoor_defences.png", dpi=200)
+    plt.close(fig)
+
+
 def main():
     results = pd.read_csv(RESULTS_FILE)
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
@@ -101,6 +169,13 @@ def main():
                            ("fpr", "False-positive rate", (0, 0.15))],
                    "poisoning_recall_fpr.png", "Label flipping: recall and false-positive rate")
     plot_per_class(results)
+    plot_backdoor_rate(results)
+    if DEFENCES_FILE.exists():
+        defences = pd.read_csv(DEFENCES_FILE)
+        plot_backdoor_defences(defences)
+        defences.groupby(["model", "attack", "rate", "defence"])[
+            ["precision", "recall", "f1", "fpr", "asr_backdoor"]
+        ].agg(["mean", "std"]).round(4).to_csv(FIGURES_DIR.parent / "backdoor_defences_table.csv")
 
     summary = table.copy()
     summary.columns = ["_".join(c).strip("_") for c in summary.columns]
