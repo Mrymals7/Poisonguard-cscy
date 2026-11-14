@@ -1,0 +1,5 @@
+Using cached HopSkipJump examples.
+Before HopSkipJump: 1.0
+After HopSkipJump: 0.72
+Changed values: 2800
+Feature constraints verified.
